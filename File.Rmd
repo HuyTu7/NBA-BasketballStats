@@ -1,0 +1,60 @@
+---
+title: "Test"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library('knitr')
+library(R.matlab)
+library(leaps)
+library(MASS)
+library(magrittr)
+library(dtplyr)
+library(boot)
+set.seed(123)
+```
+
+## R Markdown
+
+```{r}
+data = read.csv("data/CopyOfteam_season.csv", header = T)
+#data
+wins = data$won/(data$won+data$lost)
+dataf <- cbind.data.frame(data, wins)
+#pca = prcomp(data[,4:36], scale. = T, center = T)
+#summary(pca)
+
+head(dataf)
+fitB <- regsubsets(wins ~., data=dataf, method = "backward")
+fitBS <- summary(fitB)
+fitBS
+fitBBICN <- which.min(fitBS$bic)
+fitBBICN
+fitBBIC <- coef(fitB, fitBBICN)
+fitBBIC
+mod_bwd <- stepAIC(lm(wins ~ o_fga + o_fta + o_oreb + o_to + pace, data = dataf), direction = "backward", test = "F")
+sqrtRE_bwd <- summary(mod_bwd)$sigma
+sqrtRE_bwd
+```
+
+```{r}
+#Cross Validation Process with K-Fold method
+mod <- glm(wins ~ o_oreb + o_fta + o_to , data = dataf, family = quasi())
+CV <- cv.glm(data = dataf, glmfit = mod, K = 5)$delta
+CV
+CV_2 <- CV^.5
+CV_2
+
+dataT <- read.csv("data/team_season_prediction.csv", header = T)
+Tu_Huy <- predict(mod, newdata = dataT)*100
+Results <- data.frame(dataT$won*100/(dataT$won+dataT$lost))
+write.csv(cbind.data.frame(Tu_Huy, Results), file="Tu_Huy.csv")
+head(Tu_Huy)
+E <- data.frame(Tu_Huy) - Results
+sum(abs(E))/nrow(data.frame(Tu_Huy))
+SE <- E^2
+sum(SE)/nrow(data.frame(Tu_Huy))
+sum(abs(E))/nrow(data.frame(Tu_Huy))
+
+```
