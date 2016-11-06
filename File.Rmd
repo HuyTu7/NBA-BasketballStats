@@ -1,0 +1,24 @@
+---
+title: "Test"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library('knitr')
+library(R.matlab)
+library(magrittr)
+library(dtplyr)
+set.seed(123)
+```
+
+## R Markdown
+
+```{r}
+data = read.csv("data/team_season.csv", header = T)
+#data
+data[1:2, 2:36]
+pca = prcomp(data[,4:36], scale. = T, center = T)
+summary(pca)
+```
+
