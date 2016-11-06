@@ -121,45 +121,261 @@ $(document).ready(function () {
 
 <div id="r-markdown" class="section level2">
 <h2>R Markdown</h2>
-<pre class="r"><code>data = read.csv(&quot;data/team_season.csv&quot;, header = T)
+<pre class="r"><code>data = read.csv(&quot;data/CopyOfteam_season.csv&quot;, header = T)
 #data
-data[1:2, 2:36]</code></pre>
-<pre><code>##   year leag o_fgm o_fga o_ftm o_fta o_oreb o_dreb o_reb o_asts o_pf o_stl
-## 1 1976    N  3279  7176  1836  2451   1244   2512  3756   1882 2302   733
-## 2 1976    N  3462  7775  1648  2181   1241   2966  4207   2010 2039   506
+wins = data$won/(data$won+data$lost)
+dataf &lt;- cbind.data.frame(data, wins)
+#pca = prcomp(data[,4:36], scale. = T, center = T)
+#summary(pca)
+
+head(dataf)</code></pre>
+<pre><code>##   team year o_fgm o_fga o_ftm o_fta o_oreb o_dreb o_reb o_asts o_pf o_stl
+## 1  ATL 1979  3261  7027  2038  2645   1369   2406  3775   1913 2293   782
+## 2  BOS 1979  3617  7387  1907  2449   1227   2457  3684   2198 1974   809
+## 3  CHI 1979  3362  6943  2019  2592   1115   2465  3580   2152 2146   704
+## 4  CLE 1979  3811  8041  1702  2205   1307   2381  3688   2108 1934   764
+## 5  DEN 1979  3462  7470  1871  2539   1311   2524  3835   2079 1917   746
+## 6  DET 1979  3643  7596  1590  2149   1226   2415  3641   1950 2069   783
 ##   o_to o_blk o_3pm o_3pa o_pts d_fgm d_fga d_ftm d_fta d_oreb d_dreb d_reb
-## 1 1779   330     0     0  8394  3409  7137  1909  2527   1121   2533  3654
-## 2 1673   263     0     0  8572  3559  7904  1616  2180   1110   2753  3863
+## 1 1495   539    13     0  8573  3144  6872  2000  2616   1261   2339  3600
+## 2 1539   308   162     0  9303  3439  7313  1712  2222   1168   2294  3462
+## 3 1684   392    70     0  8813  3585  7222  1811  2358   1159   2345  3504
+## 4 1370   342    36     0  9360  3811  7610  1645  2150   1230   2638  3868
+## 5 1533   404    83     0  8878  3736  7591  1698  2235   1197   2587  3784
+## 6 1742   562    57     0  8933  3847  7761  1858  2405   1319   2572  3891
 ##   d_asts d_pf d_stl d_to d_blk d_3pm d_3pa d_pts     pace won lost
-## 1   2020 2174   803 1692   442     0     0  8727 106.4271  31   51
-## 2   1918 1954   699 1369   349     0     0  8734 110.5340  44   38</code></pre>
-<pre class="r"><code>pca = prcomp(data[,4:36], scale. = T, center = T)
-summary(pca)</code></pre>
-<pre><code>## Importance of components:
-##                           PC1    PC2     PC3     PC4     PC5     PC6
-## Standard deviation     4.3157 1.8842 1.69005 1.18897 1.02198 1.00510
-## Proportion of Variance 0.5644 0.1076 0.08655 0.04284 0.03165 0.03061
-## Cumulative Proportion  0.5644 0.6720 0.75855 0.80139 0.83304 0.86365
-##                            PC7     PC8     PC9    PC10    PC11    PC12
-## Standard deviation     0.93037 0.84918 0.77845 0.74193 0.64056 0.56221
-## Proportion of Variance 0.02623 0.02185 0.01836 0.01668 0.01243 0.00958
-## Cumulative Proportion  0.88988 0.91174 0.93010 0.94678 0.95921 0.96879
-##                           PC13   PC14    PC15    PC16    PC17    PC18
-## Standard deviation     0.47138 0.4376 0.38363 0.31929 0.30503 0.27165
-## Proportion of Variance 0.00673 0.0058 0.00446 0.00309 0.00282 0.00224
-## Cumulative Proportion  0.97553 0.9813 0.98579 0.98888 0.99170 0.99393
-##                           PC19    PC20    PC21    PC22   PC23    PC24
-## Standard deviation     0.25658 0.18425 0.15259 0.14940 0.1284 0.11672
-## Proportion of Variance 0.00199 0.00103 0.00071 0.00068 0.0005 0.00041
-## Cumulative Proportion  0.99593 0.99696 0.99766 0.99834 0.9988 0.99925
-##                           PC25    PC26    PC27    PC28    PC29    PC30
-## Standard deviation     0.09057 0.07713 0.06790 0.05767 0.04143 0.02848
-## Proportion of Variance 0.00025 0.00018 0.00014 0.00010 0.00005 0.00002
-## Cumulative Proportion  0.99950 0.99968 0.99982 0.99992 0.99997 1.00000
-##                           PC31      PC32      PC33
-## Standard deviation     0.01032 6.039e-05 5.426e-05
-## Proportion of Variance 0.00000 0.000e+00 0.000e+00
-## Cumulative Proportion  1.00000 1.000e+00 1.000e+00</code></pre>
+## 1   1758 2171   682 1660   554    46     0  8334 101.1661  50   32
+## 2   1867 2059   686 1635   419    74     0  8664 105.9734  61   21
+## 3   2109 2203   846 1543   498    54     0  9035 104.5335  30   52
+## 4   2208 2033   708 1667   490    65     0  9332 109.1945  37   45
+## 5   2289 2033   812 1438   455    70     0  9240 106.5192  30   52
+## 6   2306 1871   874 1583   470    57     0  9609 109.6391  16   66
+##        wins
+## 1 0.6097561
+## 2 0.7439024
+## 3 0.3658537
+## 4 0.4512195
+## 5 0.3658537
+## 6 0.1951220</code></pre>
+<pre class="r"><code>fitB &lt;- regsubsets(wins ~., data=dataf, method = &quot;backward&quot;)
+fitBS &lt;- summary(fitB)
+fitBS</code></pre>
+<pre><code>## Subset selection object
+## Call: regsubsets.formula(wins ~ ., data = dataf, method = &quot;backward&quot;)
+## 67 Variables  (and intercept)
+##         Forced in Forced out
+## teamBOS     FALSE      FALSE
+## teamCHA     FALSE      FALSE
+## teamCHI     FALSE      FALSE
+## teamCLE     FALSE      FALSE
+## teamDAL     FALSE      FALSE
+## teamDEN     FALSE      FALSE
+## teamDET     FALSE      FALSE
+## teamGSW     FALSE      FALSE
+## teamHOU     FALSE      FALSE
+## teamIND     FALSE      FALSE
+## teamKCK     FALSE      FALSE
+## teamLAC     FALSE      FALSE
+## teamLAL     FALSE      FALSE
+## teamMEM     FALSE      FALSE
+## teamMIA     FALSE      FALSE
+## teamMIL     FALSE      FALSE
+## teamMIN     FALSE      FALSE
+## teamNJN     FALSE      FALSE
+## teamNOH     FALSE      FALSE
+## teamNYK     FALSE      FALSE
+## teamORL     FALSE      FALSE
+## teamPHI     FALSE      FALSE
+## teamPHO     FALSE      FALSE
+## teamPOR     FALSE      FALSE
+## teamSAC     FALSE      FALSE
+## teamSAS     FALSE      FALSE
+## teamSDC     FALSE      FALSE
+## teamSEA     FALSE      FALSE
+## teamTOR     FALSE      FALSE
+## teamUTA     FALSE      FALSE
+## teamVAN     FALSE      FALSE
+## teamWA1     FALSE      FALSE
+## teamWAS     FALSE      FALSE
+## year        FALSE      FALSE
+## o_fgm       FALSE      FALSE
+## o_fga       FALSE      FALSE
+## o_ftm       FALSE      FALSE
+## o_fta       FALSE      FALSE
+## o_oreb      FALSE      FALSE
+## o_dreb      FALSE      FALSE
+## o_reb       FALSE      FALSE
+## o_asts      FALSE      FALSE
+## o_pf        FALSE      FALSE
+## o_stl       FALSE      FALSE
+## o_to        FALSE      FALSE
+## o_blk       FALSE      FALSE
+## o_3pm       FALSE      FALSE
+## o_3pa       FALSE      FALSE
+## o_pts       FALSE      FALSE
+## d_fgm       FALSE      FALSE
+## d_fga       FALSE      FALSE
+## d_ftm       FALSE      FALSE
+## d_fta       FALSE      FALSE
+## d_oreb      FALSE      FALSE
+## d_dreb      FALSE      FALSE
+## d_reb       FALSE      FALSE
+## d_asts      FALSE      FALSE
+## d_pf        FALSE      FALSE
+## d_stl       FALSE      FALSE
+## d_to        FALSE      FALSE
+## d_blk       FALSE      FALSE
+## d_3pm       FALSE      FALSE
+## d_3pa       FALSE      FALSE
+## d_pts       FALSE      FALSE
+## pace        FALSE      FALSE
+## won         FALSE      FALSE
+## lost        FALSE      FALSE
+## 1 subsets of each size up to 8
+## Selection Algorithm: backward
+##          teamBOS teamCHA teamCHI teamCLE teamDAL teamDEN teamDET teamGSW
+## 1  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 2  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 3  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 4  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 5  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 6  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 7  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 8  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+##          teamHOU teamIND teamKCK teamLAC teamLAL teamMEM teamMIA teamMIL
+## 1  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 2  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 3  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 4  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 5  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 6  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 7  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 8  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+##          teamMIN teamNJN teamNOH teamNYK teamORL teamPHI teamPHO teamPOR
+## 1  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 2  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 3  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 4  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 5  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 6  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 7  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 8  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+##          teamSAC teamSAS teamSDC teamSEA teamTOR teamUTA teamVAN teamWA1
+## 1  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 2  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 3  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 4  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 5  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 6  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 7  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+## 8  ( 1 ) &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;     &quot; &quot;    
+##          teamWAS year o_fgm o_fga o_ftm o_fta o_oreb o_dreb o_reb o_asts
+## 1  ( 1 ) &quot; &quot;     &quot; &quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;    &quot; &quot;    &quot; &quot;   &quot; &quot;   
+## 2  ( 1 ) &quot; &quot;     &quot; &quot;  &quot; &quot;   &quot;*&quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;    &quot; &quot;    &quot; &quot;   &quot; &quot;   
+## 3  ( 1 ) &quot; &quot;     &quot; &quot;  &quot; &quot;   &quot;*&quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;    &quot; &quot;    &quot; &quot;   &quot; &quot;   
+## 4  ( 1 ) &quot; &quot;     &quot; &quot;  &quot; &quot;   &quot;*&quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;    &quot; &quot;    &quot; &quot;   &quot; &quot;   
+## 5  ( 1 ) &quot; &quot;     &quot; &quot;  &quot; &quot;   &quot;*&quot;   &quot; &quot;   &quot; &quot;   &quot;*&quot;    &quot; &quot;    &quot; &quot;   &quot; &quot;   
+## 6  ( 1 ) &quot; &quot;     &quot; &quot;  &quot; &quot;   &quot;*&quot;   &quot; &quot;   &quot;*&quot;   &quot;*&quot;    &quot; &quot;    &quot; &quot;   &quot; &quot;   
+## 7  ( 1 ) &quot; &quot;     &quot; &quot;  &quot; &quot;   &quot;*&quot;   &quot; &quot;   &quot;*&quot;   &quot;*&quot;    &quot; &quot;    &quot; &quot;   &quot; &quot;   
+## 8  ( 1 ) &quot; &quot;     &quot; &quot;  &quot; &quot;   &quot;*&quot;   &quot; &quot;   &quot;*&quot;   &quot;*&quot;    &quot; &quot;    &quot; &quot;   &quot; &quot;   
+##          o_pf o_stl o_to o_blk o_3pm o_3pa o_pts d_fgm d_fga d_ftm d_fta
+## 1  ( 1 ) &quot; &quot;  &quot; &quot;   &quot; &quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;  
+## 2  ( 1 ) &quot; &quot;  &quot; &quot;   &quot; &quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;  
+## 3  ( 1 ) &quot; &quot;  &quot; &quot;   &quot; &quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;  
+## 4  ( 1 ) &quot; &quot;  &quot; &quot;   &quot;*&quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;  
+## 5  ( 1 ) &quot; &quot;  &quot; &quot;   &quot;*&quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;  
+## 6  ( 1 ) &quot; &quot;  &quot; &quot;   &quot;*&quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;  
+## 7  ( 1 ) &quot; &quot;  &quot; &quot;   &quot;*&quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot;*&quot;   &quot; &quot;   &quot; &quot;  
+## 8  ( 1 ) &quot; &quot;  &quot; &quot;   &quot;*&quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot; &quot;   &quot;*&quot;   &quot; &quot;   &quot; &quot;  
+##          d_oreb d_dreb d_reb d_asts d_pf d_stl d_to d_blk d_3pm d_3pa
+## 1  ( 1 ) &quot; &quot;    &quot; &quot;    &quot; &quot;   &quot; &quot;    &quot; &quot;  &quot; &quot;   &quot; &quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;  
+## 2  ( 1 ) &quot; &quot;    &quot; &quot;    &quot; &quot;   &quot; &quot;    &quot; &quot;  &quot; &quot;   &quot; &quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;  
+## 3  ( 1 ) &quot; &quot;    &quot; &quot;    &quot; &quot;   &quot; &quot;    &quot; &quot;  &quot; &quot;   &quot; &quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;  
+## 4  ( 1 ) &quot; &quot;    &quot; &quot;    &quot; &quot;   &quot; &quot;    &quot; &quot;  &quot; &quot;   &quot; &quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;  
+## 5  ( 1 ) &quot; &quot;    &quot; &quot;    &quot; &quot;   &quot; &quot;    &quot; &quot;  &quot; &quot;   &quot; &quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;  
+## 6  ( 1 ) &quot; &quot;    &quot; &quot;    &quot; &quot;   &quot; &quot;    &quot; &quot;  &quot; &quot;   &quot; &quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;  
+## 7  ( 1 ) &quot; &quot;    &quot; &quot;    &quot; &quot;   &quot; &quot;    &quot; &quot;  &quot; &quot;   &quot; &quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;  
+## 8  ( 1 ) &quot; &quot;    &quot; &quot;    &quot; &quot;   &quot; &quot;    &quot; &quot;  &quot; &quot;   &quot; &quot;  &quot; &quot;   &quot; &quot;   &quot; &quot;  
+##          d_pts pace won lost
+## 1  ( 1 ) &quot; &quot;   &quot; &quot;  &quot; &quot; &quot;*&quot; 
+## 2  ( 1 ) &quot; &quot;   &quot; &quot;  &quot; &quot; &quot;*&quot; 
+## 3  ( 1 ) &quot; &quot;   &quot;*&quot;  &quot; &quot; &quot;*&quot; 
+## 4  ( 1 ) &quot; &quot;   &quot;*&quot;  &quot; &quot; &quot;*&quot; 
+## 5  ( 1 ) &quot; &quot;   &quot;*&quot;  &quot; &quot; &quot;*&quot; 
+## 6  ( 1 ) &quot; &quot;   &quot;*&quot;  &quot; &quot; &quot;*&quot; 
+## 7  ( 1 ) &quot; &quot;   &quot;*&quot;  &quot; &quot; &quot;*&quot; 
+## 8  ( 1 ) &quot; &quot;   &quot;*&quot;  &quot;*&quot; &quot;*&quot;</code></pre>
+<pre class="r"><code>fitBBICN &lt;- which.min(fitBS$bic)
+fitBBICN</code></pre>
+<pre><code>## [1] 6</code></pre>
+<pre class="r"><code>fitBBIC &lt;- coef(fitB, fitBBICN)
+fitBBIC</code></pre>
+<pre><code>##   (Intercept)         o_fga         o_fta        o_oreb          o_to 
+##  1.013322e+00  6.661866e-05  3.074433e-05 -7.160895e-05  7.211953e-05 
+##          pace          lost 
+## -5.626653e-03 -1.236431e-02</code></pre>
+<pre class="r"><code>mod_bwd &lt;- stepAIC(lm(wins ~ o_fga + o_fta + o_oreb + o_to + pace, data = dataf), direction = &quot;backward&quot;, test = &quot;F&quot;)</code></pre>
+<pre><code>## Start:  AIC=-2427.48
+## wins ~ o_fga + o_fta + o_oreb + o_to + pace
+## 
+##          Df Sum of Sq    RSS     AIC F Value     Pr(F)    
+## - pace    1   0.00000 12.611 -2429.5   0.000   0.99902    
+## - o_fga   1   0.00467 12.616 -2429.2   0.229   0.63217    
+## &lt;none&gt;                12.611 -2427.5                      
+## - o_oreb  1   0.11235 12.723 -2423.9   5.515   0.01917 *  
+## - o_to    1   1.38710 13.998 -2364.3  68.084 9.451e-16 ***
+## - o_fta   1   2.05079 14.662 -2335.3 100.661 &lt; 2.2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Step:  AIC=-2429.48
+## wins ~ o_fga + o_fta + o_oreb + o_to
+## 
+##          Df Sum of Sq    RSS     AIC F Value  Pr(F)    
+## - o_fga   1   0.00496 12.616 -2431.2   0.244 0.6217    
+## &lt;none&gt;                12.611 -2429.5                   
+## - o_oreb  1   0.11248 12.724 -2425.9   5.530 0.0190 *  
+## - o_to    1   1.54303 14.154 -2359.3  75.860 &lt;2e-16 ***
+## - o_fta   1   2.10136 14.713 -2335.2 103.309 &lt;2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Step:  AIC=-2431.24
+## wins ~ o_fta + o_oreb + o_to
+## 
+##          Df Sum of Sq    RSS     AIC F Value     Pr(F)    
+## &lt;none&gt;                12.616 -2431.2                      
+## - o_oreb  1   0.14068 12.757 -2426.3   6.925  0.008712 ** 
+## - o_to    1   1.58977 14.206 -2359.1  78.253 &lt; 2.2e-16 ***
+## - o_fta   1   2.29938 14.915 -2328.6 113.182 &lt; 2.2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
+<pre class="r"><code>sqrtRE_bwd &lt;- summary(mod_bwd)$sigma
+sqrtRE_bwd</code></pre>
+<pre><code>## [1] 0.1425332</code></pre>
+<pre class="r"><code>#Cross Validation Process with K-Fold method
+mod &lt;- glm(wins ~ o_fga + o_oreb + o_fta + o_to + pace, data = dataf, family = quasi())
+CV &lt;- cv.glm(data = dataf, glmfit = mod, K = 5)$delta
+CV</code></pre>
+<pre><code>## [1] 0.02075088 0.02068629</code></pre>
+<pre class="r"><code>CV_2 &lt;- CV^.5
+CV_2</code></pre>
+<pre><code>## [1] 0.1440517 0.1438273</code></pre>
+<pre class="r"><code>dataT &lt;- read.csv(&quot;data/team_season_prediction.csv&quot;, header = T)
+Tu_Huy &lt;- predict(mod, newdata = dataT)*100
+Results &lt;- data.frame(dataT$won*100/(dataT$won+dataT$lost))
+write.csv(cbind.data.frame(Tu_Huy, Results), file=&quot;Tu_Huy.csv&quot;)
+head(Tu_Huy)</code></pre>
+<pre><code>##        1        2        3        4        5        6 
+## 46.36185 51.34368 42.89032 50.70779 53.14040 53.51331</code></pre>
+<pre class="r"><code>E &lt;- data.frame(Tu_Huy) - Results
+sum(abs(E))/nrow(data.frame(Tu_Huy))</code></pre>
+<pre><code>## [1] 10.66862</code></pre>
+<pre class="r"><code>SE &lt;- E^2
+sum(SE)/nrow(data.frame(Tu_Huy))</code></pre>
+<pre><code>## [1] 167.1857</code></pre>
+<pre class="r"><code>sum(abs(E))/nrow(data.frame(Tu_Huy))</code></pre>
+<pre><code>## [1] 10.66862</code></pre>
 </div>
 
 
