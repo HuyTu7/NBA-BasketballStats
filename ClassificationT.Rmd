@@ -1,0 +1,37 @@
+---
+title: "ClassificationT"
+output: html_document
+---
+
+---
+title: "Test"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library('knitr')
+library(R.matlab)
+library(leaps)
+library(MASS)
+library(magrittr)
+library(dtplyr)
+library(boot)
+set.seed(123)
+```
+
+
+## R Markdown
+
+```{r}
+data = read.csv("data/team_season.csv", header = T)
+smp_size <- floor(0.60 * nrow(data))
+orders = sample(c(1:nrow(data)), 0.7*nrow(data), replace = FALSE, prob = NULL)
+
+
+train <- data[orders, ]
+test <- data[-orders, ]
+wins <- (train$won*100)/(train$won+train$lost)
+labels <- c("Outstanding", "Good", "Average", "Poor")
+
+```
