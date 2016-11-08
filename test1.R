@@ -3,6 +3,7 @@ library(ggplot2)
 library(lattice)
 library(e1071)
 library(nnet)
+library(ROCR)
 data = read.csv("team_season.csv", header = T)
 #data
 #0-35 1 poor
@@ -28,9 +29,12 @@ for (i in c(1:684)){
 }
 head(winClass)
 head(wins)
+pca = prcomp(data[,3:33], center = T, scale. = T)
+summary(pca)
 components = preProcess(data[,3:33], method=c("center", "scale", "pca"))
-#components
-pcaData = cbind(predict(components, data[,3:33]), wins)
+(components)
+
+pcaData = cbind(predict(components, data[,3:33]), wins, winClass)
 
 #pcaData[1,]
 
@@ -67,3 +71,26 @@ neuralOut = predict(neural, newdata = test[,1:10])
 testErrorN = mean((neuralOut - test[,11])^2)
 testErrorN
 
+svmModel = svm(winClass ~ PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10, data = train, type = 'C-classification')
+svmModel
+
+svmPredict = predict(svmModel, newdata = test[,1:10])
+
+head(test[,12])
+head(svmPredict)
+
+c = confusionMatrix(svmPredict, test[,12])
+
+(c)
+
+plot(svmPredict)
+
+svmModel1 = svm(wins ~ PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10, data = train)
+svmPredict1 = predict(svmModel1, newdata = test[,1:10])
+#svmPredict1
+svmError = mean((svmPredict1 - test[,11])^2)
+svmError
+
+trainS = predict(svmModel1)
+svmError = mean((trainS - train[,11])^2)
+svmError 
