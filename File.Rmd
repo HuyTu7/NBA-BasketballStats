@@ -12,48 +12,73 @@ library(MASS)
 library(magrittr)
 library(dtplyr)
 library(boot)
+library(e1071)
+
 set.seed(123)
 ```
 
 ## R Markdown
 
 ```{r}
-data = read.csv("data/CopyOfteam_season.csv", header = T)
+data = read.csv("data/team_season.csv", header = T)
+smp_size <- floor(0.60 * nrow(data))
+orders = sample(c(1:nrow(data)), 0.7*nrow(data), replace = FALSE, prob = NULL)
+
+
+train <- data[orders, ]
+test <- data[-orders, ]
 #data
-wins = data$won/(data$won+data$lost)
-dataf <- cbind.data.frame(data, wins)
+wins = (train$won)/(train$won+train$lost)
+train <- cbind.data.frame(train, wins)
+train$won <- NULL
+train$lost <- NULL
 #pca = prcomp(data[,4:36], scale. = T, center = T)
 #summary(pca)
 
-head(dataf)
-fitB <- regsubsets(wins ~., data=dataf, method = "backward")
+head(train)
+fitF <- regsubsets(wins ~., data=train, nvmax = ncol(data), method = "forward")
+fitFS <- summary(fitF)
+fitFBICN <- which.min(fitFS$bic)
+fitFBIC <- coef(fitF, fitFBICN)
+fitFBIC
+
+fitB <- regsubsets(wins ~., data=train, nvmax = ncol(data), method = "backward")
 fitBS <- summary(fitB)
-fitBS
 fitBBICN <- which.min(fitBS$bic)
-fitBBICN
 fitBBIC <- coef(fitB, fitBBICN)
 fitBBIC
-mod_bwd <- stepAIC(lm(wins ~ o_fga + o_fta + o_oreb + o_to + pace, data = dataf), direction = "backward", test = "F")
-sqrtRE_bwd <- summary(mod_bwd)$sigma
-sqrtRE_bwd
+#mod_bwd <- stepAIC(lm(wins ~ team + year + o_fgm + o_fga + o_ftm + o_fta + o_oreb + o_dreb + o_reb + o_asts + o_pf + o_stl + o_to + o_blk + o_3pm + o_3pa + o_pts + d_fgm + d_fga + d_ftm + d_fta + d_oreb + d_dreb + d_reb + d_asts + d_pf + d_stl + d_to +d_blk + d_3pm + d_3pa + d_pts   + pace, data = train), direction = "backward", test = "F")
+#sqrtRE_bwd <- summary(mod_bwd)$sigma
+#sqrtRE_bwd
 ```
 
 ```{r}
 #Cross Validation Process with K-Fold method
-mod <- glm(wins ~ o_oreb + o_fta + o_to , data = dataf, family = quasi())
-CV <- cv.glm(data = dataf, glmfit = mod, K = 5)$delta
-CV
-CV_2 <- CV^.5
-CV_2
+#mod <- glm(wins ~ o_fgm + o_ftm + o_3pm + d_fga + d_ftm + d_3pa + d_3pa^2, data = train)
+#mod <- glm(wins ~ o_ftm + d_fgm + d_ftm + d_pf +  d_3pm +  pace, data = train)
 
-dataT <- read.csv("data/team_season_prediction.csv", header = T)
-Tu_Huy <- predict(mod, newdata = dataT)*100
-Results <- data.frame(dataT$won*100/(dataT$won+dataT$lost))
+#mod <- glm(wins ~ o_pts + o_pts^2 + d_fga + d_ftm + d_ftm^2 + d_3pa + d_3pa^2, data = train)
+#mod <- glm(wins ~ o_pts + d_fga + d_fgm + d_ftm +  d_3pm, data = train) 
+mod <- glm(wins ~ o_fgm + o_fga + o_ftm + o_fta + o_oreb + o_dreb + o_reb + o_asts + o_pf + o_stl + o_to + o_blk + o_3pm + o_3pa + o_pts + d_fgm + d_fga + d_ftm + d_fta + d_oreb + d_dreb + d_reb + d_asts + d_pf + d_stl + d_to +d_blk + d_3pm + d_3pa + d_pts + pace, data = train, family = binomial()) 
+backward <- step(mod)
+summary(backward)
+#mod <- glm(formula = wins ~ o_fgm + o_ftm + o_3pm + d_pts, data = train, family = binomial())
+#mod <- svm(wins ~ o_fgm + o_ftm + o_3pm + d_pts, data = train)
+mod <- svm(wins ~ o_pts + d_fga + d_fgm + d_ftm +  d_3pm, data = train)
+#mod <- glm(wins ~ o_fgm + o_fga + o_ftm + o_oreb + o_asts + o_to + o_3pm + d_fgm + d_fga + d_ftm + d_to + d_blk + d_3pm, data = train)
+summary(mod)
+#CV <- cv.glm(data = train, glmfit = mod, K = 10)$delta
+#CV
+#CV_2 <- CV^.5
+#CV_2
+
+Tu_Huy <- predict(mod, newdata = test)
+Results <- data.frame((test$won)/(test$won+test$lost))
 write.csv(cbind.data.frame(Tu_Huy, Results), file="Tu_Huy.csv")
 head(Tu_Huy)
 E <- data.frame(Tu_Huy) - Results
 sum(abs(E))/nrow(data.frame(Tu_Huy))
-SE <- E^2
+SE <- (E*100)^2
 sum(SE)/nrow(data.frame(Tu_Huy))
 sum(abs(E))/nrow(data.frame(Tu_Huy))
 
