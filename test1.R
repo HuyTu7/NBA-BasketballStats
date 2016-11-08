@@ -2,17 +2,37 @@ library(caret)
 library(ggplot2)
 library(lattice)
 library(e1071)
+library(nnet)
 data = read.csv("team_season.csv", header = T)
 #data
-
+#0-35 1 poor
+#35-50 2 average
+#50-70 3 good
+#70-100 4 outstanding
 wins = data$won*100/(data$won+data$lost)
 #wins
-
+winClass = c(1:684)
+for (i in c(1:684)){
+  if (wins[i] <= 35) {
+    winClass[i] = 1
+  }
+  else if (wins[i] > 35 && wins[i] <= 50){
+    winClass[i] = 2
+  }
+  else if (wins[i] > 50 && wins[i] <= 70){
+    winClass[i] = 3
+  }
+  else {
+    winClass[i] = 4
+  }
+}
+head(winClass)
+head(wins)
 components = preProcess(data[,3:33], method=c("center", "scale", "pca"))
-
+#components
 pcaData = cbind(predict(components, data[,3:33]), wins)
 
-pcaData[1,]
+#pcaData[1,]
 
 ## 75% of the sample size
 smp_size <- floor(0.75 * nrow(pcaData))
@@ -26,23 +46,24 @@ test <- pcaData[-train_ind, ]
 
 model = lm(wins~PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10, data = train)
 
-model
-
-plot(train[,1], train[,11])
-plot(train[,2], train[,11])
-plot(train[,3], train[,11])
-plot(train[,4], train[,11])
+#model
 
 outcomes = predict.lm(model, test[,1:10])
 
 trainOutput = predict.lm(model)
-trainError = sum((trainOutput - train[,11])^2)/513
+trainError = mean((trainOutput - train[,11])^2)
 trainError
 
-head(outcomes)
+#head(outcomes)
+#head(test[,11])
 
-head(test[,11])
-
-testError = sum((outcomes - test[,11])^2)/171
-
+testError = mean((outcomes - test[,11])^2)
 testError
+
+neural = nnet(wins ~ PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10, data=pcaData, size = 2)
+#neural
+
+neuralOut = predict(neural, newdata = test[,1:10])
+testErrorN = mean((neuralOut - test[,11])^2)
+testErrorN
+
