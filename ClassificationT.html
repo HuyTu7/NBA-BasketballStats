@@ -122,14 +122,310 @@ $(document).ready(function () {
 <div id="r-markdown" class="section level2">
 <h2>R Markdown</h2>
 <pre class="r"><code>data = read.csv(&quot;data/team_season.csv&quot;, header = T)
-smp_size &lt;- floor(0.60 * nrow(data))
-orders = sample(c(1:nrow(data)), 0.7*nrow(data), replace = FALSE, prob = NULL)
+#data
+#0-35 1 poor
+#35-50 2 average
+#50-70 3 good
+#70-100 4 outstanding
+wins = data$won*100/(data$won+data$lost)
+#wins
+winClass = c(1:684)
+for (i in c(1:684)){
+  if (wins[i] &lt;= 35) {
+    winClass[i] = 1
+  }
+  else if (wins[i] &gt; 35 &amp;&amp; wins[i] &lt;= 50){
+    winClass[i] = 2
+  }
+  else if (wins[i] &gt; 50 &amp;&amp; wins[i] &lt;= 65){
+    winClass[i] = 3
+  }
+  else {
+    winClass[i] = 4
+  }
+}
+head(winClass)</code></pre>
+<pre><code>## [1] 3 4 2 2 2 1</code></pre>
+<pre class="r"><code>head(wins)</code></pre>
+<pre><code>## [1] 60.97561 74.39024 36.58537 45.12195 36.58537 19.51220</code></pre>
+<pre class="r"><code>pca = prcomp(data[,3:33], center = T, scale. = T)
+summary(pca)</code></pre>
+<pre><code>## Importance of components:
+##                           PC1    PC2     PC3     PC4     PC5     PC6
+## Standard deviation     4.3105 1.9452 1.22951 1.05671 1.01095 0.93854
+## Proportion of Variance 0.5994 0.1221 0.04876 0.03602 0.03297 0.02841
+## Cumulative Proportion  0.5994 0.7214 0.77020 0.80622 0.83919 0.86760
+##                            PC7     PC8     PC9    PC10    PC11    PC12
+## Standard deviation     0.88043 0.84112 0.76461 0.70611 0.57131 0.52388
+## Proportion of Variance 0.02501 0.02282 0.01886 0.01608 0.01053 0.00885
+## Cumulative Proportion  0.89261 0.91543 0.93429 0.95037 0.96090 0.96975
+##                           PC13    PC14    PC15    PC16    PC17    PC18
+## Standard deviation     0.46656 0.41730 0.37308 0.31181 0.30441 0.25958
+## Proportion of Variance 0.00702 0.00562 0.00449 0.00314 0.00299 0.00217
+## Cumulative Proportion  0.97678 0.98239 0.98688 0.99002 0.99301 0.99518
+##                           PC19    PC20    PC21    PC22    PC23    PC24
+## Standard deviation     0.18805 0.18050 0.14849 0.13150 0.11750 0.10641
+## Proportion of Variance 0.00114 0.00105 0.00071 0.00056 0.00045 0.00037
+## Cumulative Proportion  0.99632 0.99737 0.99808 0.99864 0.99909 0.99945
+##                           PC25    PC26    PC27    PC28    PC29      PC30
+## Standard deviation     0.08020 0.06637 0.05865 0.04302 0.02889 6.225e-05
+## Proportion of Variance 0.00021 0.00014 0.00011 0.00006 0.00003 0.000e+00
+## Cumulative Proportion  0.99966 0.99980 0.99991 0.99997 1.00000 1.000e+00
+##                             PC31
+## Standard deviation     5.599e-05
+## Proportion of Variance 0.000e+00
+## Cumulative Proportion  1.000e+00</code></pre>
+<pre class="r"><code>components = preProcess(data[,3:33], method=c(&quot;center&quot;, &quot;scale&quot;, &quot;pca&quot;))
+(components)</code></pre>
+<pre><code>## Created from 684 samples and 31 variables
+## 
+## Pre-processing:
+##   - centered (31)
+##   - ignored (0)
+##   - principal component signal extraction (31)
+##   - scaled (31)
+## 
+## PCA needed 10 components to capture 95 percent of the variance</code></pre>
+<pre class="r"><code>pcaData = cbind(predict(components, data[,3:33]), wins, winClass)
 
+#pcaData[1,]
 
-train &lt;- data[orders, ]
-test &lt;- data[-orders, ]
-wins &lt;- (train$won*100)/(train$won+train$lost)
-labels &lt;- c(&quot;Outstanding&quot;, &quot;Good&quot;, &quot;Average&quot;, &quot;Poor&quot;)</code></pre>
+## 75% of the sample size
+smp_size &lt;- floor(0.75 * nrow(pcaData))
+
+## set the seed to make your partition reproductible
+set.seed(123)
+train_ind &lt;- sample(seq_len(nrow(pcaData)), size = smp_size)
+
+train &lt;- pcaData[train_ind, ]
+test &lt;- pcaData[-train_ind, ]
+
+model = lm(wins~PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10, data = train)
+
+#model
+
+outcomes = predict.lm(model, test[,1:10])
+
+trainOutput = predict.lm(model)
+trainError = mean((trainOutput - train[,11])^2)
+trainError</code></pre>
+<pre><code>## [1] 46.04965</code></pre>
+<pre class="r"><code>#head(outcomes)
+#head(test[,11])
+
+testError = mean((outcomes - test[,11])^2)
+testError</code></pre>
+<pre><code>## [1] 46.92478</code></pre>
+<pre class="r"><code>neural = nnet(wins ~ PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10, data=pcaData, size = 2)</code></pre>
+<pre><code>## # weights:  25
+## initial  value 1834453.347580 
+## final  value 1808260.694825 
+## converged</code></pre>
+<pre class="r"><code>#neural
+
+neuralOut = predict(neural, newdata = test[,1:10])
+testErrorN = mean((neuralOut - test[,11])^2)
+testErrorN</code></pre>
+<pre><code>## [1] 2659.476</code></pre>
+<pre class="r"><code>svmModel = svm(winClass ~ PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10, data = train, type = 'C-classification')
+svmModel</code></pre>
+<pre><code>## 
+## Call:
+## svm(formula = winClass ~ PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + 
+##     PC7 + PC8 + PC9 + PC10, data = train, type = &quot;C-classification&quot;)
+## 
+## 
+## Parameters:
+##    SVM-Type:  C-classification 
+##  SVM-Kernel:  radial 
+##        cost:  1 
+##       gamma:  0.1 
+## 
+## Number of Support Vectors:  460</code></pre>
+<pre class="r"><code>svmPredict = predict(svmModel, newdata = test[,1:10])
+
+head(test[,12])</code></pre>
+<pre><code>## [1] 4 2 1 4 3 2</code></pre>
+<pre class="r"><code>head(svmPredict)</code></pre>
+<pre><code>##  2  5  7 11 12 18 
+##  3  2  2  4  3  2 
+## Levels: 1 2 3 4</code></pre>
+<pre class="r"><code>c = confusionMatrix(svmPredict, test[,12])
+
+(c)</code></pre>
+<pre><code>## $positive
+## NULL
+## 
+## $table
+##           Reference
+## Prediction  1  2  3  4
+##          1 19  4  0  0
+##          2 15 28  8  1
+##          3  2 15 38 15
+##          4  0  0  7 19
+## 
+## $overall
+##       Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull 
+##   6.081871e-01   4.633472e-01   5.307389e-01   6.818162e-01   3.099415e-01 
+## AccuracyPValue  McnemarPValue 
+##   9.173019e-16            NaN 
+## 
+## $byClass
+##          Sensitivity Specificity Pos Pred Value Neg Pred Value Precision
+## Class: 1   0.5277778   0.9703704      0.8260870      0.8851351 0.8260870
+## Class: 2   0.5957447   0.8064516      0.5384615      0.8403361 0.5384615
+## Class: 3   0.7169811   0.7288136      0.5428571      0.8514851 0.5428571
+## Class: 4   0.5428571   0.9485294      0.7307692      0.8896552 0.7307692
+##             Recall        F1 Prevalence Detection Rate
+## Class: 1 0.5277778 0.6440678  0.2105263      0.1111111
+## Class: 2 0.5957447 0.5656566  0.2748538      0.1637427
+## Class: 3 0.7169811 0.6178862  0.3099415      0.2222222
+## Class: 4 0.5428571 0.6229508  0.2046784      0.1111111
+##          Detection Prevalence Balanced Accuracy
+## Class: 1            0.1345029         0.7490741
+## Class: 2            0.3040936         0.7010981
+## Class: 3            0.4093567         0.7228973
+## Class: 4            0.1520468         0.7456933
+## 
+## $mode
+## [1] &quot;sens_spec&quot;
+## 
+## $dots
+## list()
+## 
+## attr(,&quot;class&quot;)
+## [1] &quot;confusionMatrix&quot;</code></pre>
+<pre class="r"><code>plot(svmPredict)</code></pre>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABUAAAAPACAMAAADDuCPrAAAAUVBMVEUAAAAAADoAAGYAOpAAZpAAZrY6AAA6kNtmAABmtv+QOgCQZgCQkDqQ29uQ2/+2ZgC2kDq2/7a2//++vr7bkDrb////tmb/25D//7b//9v///9NpQx0AAAACXBIWXMAAB2HAAAdhwGP5fFlAAAgAElEQVR4nO3d4XJbRbeuUQVOQsg5G+3NMU7C/V/oltz2GztayUfPle40y2P8oaAKk5o9+0GyZPn0NwAlp5/9BwD4txJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBod0PPpydvB/yWAyYYG9O70koYCRzIwoB/fnb72y5/j/nMAk40L6OcPL4v56f3l73/9a9h/D2CycQG9v8nlNam/D/vvAUw2LqDn2yfslwehvg0KHMawgF4ebv528w/vPIcHjmNYQC+PNm+frt97GQk4DgEFKPIUHqDIi0gARbPfxnT7qBTgX2ryG+l9CxQ4joE/yvlQzJfe/DHuPwcw2dAPEzl/1U/fAAWOxMfZARQt9IHKN0/4Twv94fg32lipI/nZ42X1gC70p+NfZ3bPpvvZA2bsTyLtftO8FWGH0+n/H5nbsYKRAd39orsVYQcBZbihAd37vnkrwg4CynBDn8L/353vnLci7CCgDDf2e6DX3yq34+1LVoQdBJThBr+I9PCL5crP460IOwgoww1/Ff7hnfTFR6FWhB0ElOHGv43p8bcbV36bnBVhBwFluBnvA71/fN9v97uarAg7CCjDzXkj/eOj0FPnq/JWhB0ElOGm/STSWUCZS0AZbuaPcl4/YllAmUVAGc7PwnNUAspwAspRCSjDCShHJaAMt/QhWBF2EFCGW/oQrAg7CCjDLX0IVoQdBJThlj4EK8IOAspwSx+CFWEHAWW4pQ/BirCDgDLc0odgRdhBQBlu6UOwIuwgoAy39CFYEXYQUIZb+hCsCDsIKMMtfQhWhB0ElOGWPgQrwg4CynBLH4IVYQcBZbilD8GKsIOAMtzSh2BF2EFAGW7pQ7Ai7CCgDLf0IVgRdhBQhlv6EKwIOwgowy19CFaEHQSU4ZY+BCvCDgLKcEsfghVhBwFluKUPwYqwg4Ay3NKHYEXYQUAZbulDsCLsIKAMt/QhWBF2EFCGW/oQrAg7CCjDLX0IVoQdBJThlj4EK8IOAspwSx+CFWEHAWW4pQ/BirCDgDLc0odgRdhBQBlu6UOwIuwgoAy39CFYEXYQUIZb+hCsCDsIKMMtfQhWhB0ElOGWPgQrwg4CynBLH4IVYQcBZbilD8GKsIOAMtzSh2BF2EFAGW7pQ7Ai7CCgDLf0IVgRdhBQhlv6EKwIOwgowy19CFaEHQSU4ZY+BCvCDgLKcEsfghVhBwFluKUPwYqwg4Ay3NKHYEXYQUAZbulDsCLsIKAMt/QhWBF2EFCGW/oQrAg7CCjDLX0IVoQdBJThlj4EK8IOAspwSx+CFWEHAWW40YdwPj152/8vWxF2EFCGG3oId6eXehtqRdhBQBlu4CF8fHf62i9/dn0FK8IOAspw4w7h84eXxfz0/vL3v/7V8yWsCDsIKMONO4T7m1xek/p7z5ewIuwgoAw37hDOt0/YLw9Cu74NakXYQUAZbtghXB5u/nbzD+/6nsNbEXYQUIYbdgiXR5u3T9fv+15GsiLsIKAMJ6AclYAynKfwHJWAMpwXkTgqAWW42W9jun1U+h1WhB0ElOEmv5G+70eRrAg7CCjDDTyEh2K+9OaPrq9gRdhBQBlu6CGcv+qnDxNhIgFlOB9nx1EJKMMtdAg3T/hPVoQdBJThFjoEAeWHElCGG3oIn94/vup+V3gF6W9P4dlFQBlu5CGcH9+2dF/8PGUBZQ8BZbiBh3B+fNR5/+UZubcxMY+AMty4Q7j+Ro/rK+/Xt4M+PPS8vrPeG+mZRkAZbuTPwrePY7r78g6mez/KyTwCynAjP43p7eNfvzzsPPs0JqYRUIYb/nmgl79+ieadzwNlGgFluBkB/fIzSD5QmXkElOGGf6Dy01P5BwLKPALKcCNfRHr7+NfnT+F9D5RZBJThRn6gcnvX58d3+eVIm7/m4zusCDsIKMON/UDlh8egX145One+k96KsIOAMtzAQ7i+k/7hKftjN68/kdT1AFRA2UNAGW7kITwUdM8nKlsRdhBQhht7CF99JP3tL4r/PivCDgLKcKMP4csvRup6/b2xIuwgoAy39CFYEXYQUIZb+hCsCDsIKMMtfQhWhB0ElOGWPgQrwg4CynBLH4IVYQcBZbilD8GKsIOAMtzSh2BF2EFAGW7pQ7Ai7CCgDLf0IVgRdhBQhlv6EKwIOwgowy19CFaEHQSU4ZY+BCvCDgLKcEsfghVhBwFluKUPwYqwg4Ay3NKHYEXYQUAZbulDsCLsIKAMt/QhWBF2EFCGW/oQrAg7CCjDLX0IVoQdBJThlj4EK8IOAspwSx+CFWEHAWW4pQ/BirCDgDLc0odgRdhBQBlu6UOwIuwgoAy39CFYEXYQUIZb+hCsCDsIKMMtfQhWhB0ElOGWPgQrwg4CynBLH4IVYQcBZbilD8GKsIOAMtzSh2BF2EFAGW7pQ7Ai7CCgDLf0IVgRdhBQhlv6EKwIOwgowy19CFaEHQSU4ZY+BCvCDgLKcEsfghVhBwFluKUPwYqwg4Ay3NKHYEXYQUAZbulDsCLsIKAMt/QhWBF2EFCGW/oQrAg7CCjDLX0IVoQdBJThlj4EK8IOAspwSx+CFWEHAWW4pQ/BirCDgDLc0odgRdhBQBlu6UOwIuwgoAy39CFYEXYQUIZb+hCsCDsIKMMtfQhWpOJ0bD2D+NmNG8rtWMHSh2BF+v3svg3XM4qf3bih3I4VjD6Ecxb/bf+/bEX6qYZRMM/QQ7j76sFDb0OtSD/VMArmGXgIH9/dPP365c+ur2BF+qmGUTDPuEP4/OFlMT+9v/z9r3/1fAkr0k81jIJ5xh3C/U0ur0n9vedLWJF+qmEUzDPuEM63T9gvD0K7vg1qRfqphlEwz7BDuDzc/O3mH971PYe3Iv1UwyiYZ9ghXB5t3j5dv+97GcmK9FMNo2AeAT0Y1TAK5vEU/mBUwyiYx4tIB6MaRsE8s9/GdPuo9DusSD/VMArmmfxG+r4fRbIi/VTDKJhn4CE8FPOlN390fQUr0k81jIJ5hh7C+at++jCR8VTDKJjHx9kdjGoYBfMsdAj7Pj2XRjWMgnkWOgQB/RFUwyiYZ8ohtJeT+j7K7sqK9FMNo2CekT/K+VTMfB/Ui0jjqYZRMM+EgD57Lb7zQagV6acaRsE84wN6f3r8+aPrE/m+x6BWpJ9qGAXzDA/o5a/58aO7znfSW5F+qmEUzDM8oPfPfv798wcfJjKaahgF8wwP6ItHnT7ObjjVMArmGR7Q8/OA+kDl4VTDKJhnQkCfNVNAh1MNo2CeuU/hBXQ41TAK5pnxItKX34109j3Q0VTDKJhneECfv/J+7xPph1MNo2CekQE9PbyFPtW8fkS9T6QfTTWMgnlGB/TBQzYffqLz9jcdf48V6acaRsE8Iw8hDX0I6F13PwW0QDWMgnnGH8LHd08vx3d/Jr0V6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8Sx+CFemnGkbBPEsfghXppxpGwTxLH4IV6acaRsE8ow/hfHrytv9ftiL9VMMomGfoIdydXuptqBXppxpGwTwDD+Hju9PXfvmz6ytYkX6qYRTMM+4QPn94WcxP7y9//+tfPV/CivRTDaNgnnGHcH+Ty2tSf+/5Elakn2oYBfOMO4Tz7RP2y4PQrm+DWpF+qmEUzDPsEC4PN3+7+Yd3fc/hrUg/1TAK5hl2CJdHm7dP1+/7XkayIv1UwyiYR0APRjWMgnk8hT8Y1TAK5vEi0sGohlEwz+y3Md0+Kv0OK9JPNYyCeSa/kb7vR5GsSD/VMArmGXgID8V86c0fXV/BivRTDaNgnqGHcP6qnz5MZDzVMArm8XF2B6MaRsE8Cx3CzRP+kxXppxpGwTwLHYKA/giqYRTMM+sQPr3vewfTAyvSTzWMgnkE9GBUwyiYR0APRjWMgnlGfpjIFh8mMphqGAXzCOjBqIZRMM/Qn4UX0PlUwyiYZ/CPcubjRHwPdBLVMArmGf2jnE8//S6gk6iGUTDP2EO4/mr41k0BnUQ1jIJ5Bh/C9TPtHp7GC+gkqmEUzDP8EO5OD78MXkAnUQ2jYJ7xh3B9Gv9WQGdRDaNgngmHcH0a/8v/COgcqmEUzDPlEO4e3gIqoDOohlEwz5xDuD6NF9ApVMMomGfWIZwFdA7VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5ln6EKxIP9UwCuZZ+hCsSD/VMArmWfoQrEg/1TAK5hl9COfTk7f9/7IV6acaRsE8Qw/h7vRSb0OtSD/VMArmGXgIH9+dvvbLn11fwYr0Uw2jYJ5xh/D5w8tifnp/+ftf/+r5Elakn2oYBfOMO4T7m1xek/p7z5ewIv1UwyiYZ9whnG+fsF8ehHZ9G9SK9FMNo2CeYYdwebj5280/vOt7Dm9F+qmGUTDPsEO4PNq8fbp+3/cykhXppxpGwTwCejCqYRTM4yn8waiGUTCPF5EORjWMgnlmv43p9lHpd1iRfqphFMwz+Y30fT+KZEX6qYZRMM/AQ3go5ktv/uj6Clakn2oYBfMMPYTzV/30YSLjqYZRMI+PszsY1TAK5lnoEG6e8J+sSD/VMArmWegQBPRHUA2jYJ45h/DwinzfW5iurEg/1TAK5hl6CPePnwB6X/s8ZQEtUA2jYJ6Bh9Aedp7e/PHlo+l9Iv1wqmEUzDPwEJ5egP/1vx/LefaJ9OOphlEwz7hDuDzuvGbz4RfLPXbz3ifSD6caRsE84w7h7vEJ+/nLDyBdntT7MJHBVMMomGf8x9ldHonmibuPsxtONYyCecZ/oPLzh50+UHk41TAK5pnwifRnAZ1INYyCeUYG9PGN8+fnT+EFdDDVMArmGfk90Nvvd569iDSaahgF84x8Ff7mPUv3PpF+ONUwCuYZdwjXz1N++/U/8In0o6mGUTDPwEN4+An4Lw9Czy//9p+wIv1UwyiYZ+Qh3L/4HR533f0U0ALVMArmGXsI52dP2e/6P5PeivRTDaNgnqUPwYr0Uw2jYJ6lD8GK9FMNo2CepQ/BivRTDaNgnqUPwYr0Uw2jYJ6lD8GK9FMNo2CepQ/BivRTDaNgnqUPwYr0Uw2jYJ6lD8GK9FMNo2CepQ/BivRTDaNgnqUPwYr0Uw2jYJ6lD8GK9FMNo2CepQ/BivRTDaNgnqUPwYr0Uw2jYJ6lD8GK9FMNo2CepQ/BivRTDaNgnqUPwYr0Uw2jYJ6lD8GK9FMNo2CepQ/BivRTDaPYHsah9V6TH2bpRAloP9Uwiq1RHFz/RflBlk6UgPZTDaMwinmWTpSA9nNVjMIo5lk6UQLaz1UxCqOYZ+lECWg/V8UojGKepRMloP1cFaMwinmWTpSA9nNVjMIo5lk6UQLaz1UxCqOYZ+lECWg/V8UojGKepRMloP1cFaMwinmWTpSA9nNVjMIo5lk6UQLaz1UxCqOYZ+lECWg/V8UojGKepRMloP1cFaMwinmWTpSA9nNVjMIo5lk6UQLaz1UxCqOYZ+lECWg/V8UojGKepRMloP1cFaMwinmWTpSA9nNVjMIo5lk6UQLaz1UxCqOYZ+lECWg/V8UojGKepRMloP1cFaMwinmWTpSA9nNVjMIo5lk6UQLaz1UxCqOYZ+lEdczlZ/9e6sF6Zvazt3koowijCAHd9o/n8rP7NlzPzH72Ng9lFGEUIaDbOgL6s49wKFcljCKMIgR0m4A2rkoYRRhFCOg2AW1clTCKMIoQ0G0C2rgqYRRhFCGg2wS0cVXCKMIoQkC3CWjjqoRRhFGEgG4T0MZVCaMIowgB3SagjasSRhFGEQcO6DnvBX/b/y8LaOOqhFGEUcRRA3r31c/T9DZUQBtXJYwijCKOGdCP725+IvGXP7u+goA2rkoYRRhFHDKgnz+8LOan95e///Wvni8hoI2rEkYRRhGHDOj9TS6vSf2950sIaOOqhFGEUcQhA3q+fcJ+eRDa9W1QAW1clTCKMIo4YkAvDzd/u/mHd33P4QW0cVXCKMIo4ogBvTzavH26ft/3MpKANq5KGEUYRQjoNgFtXJUwijCKOGJAPYX/cVyVMIowijhiQL2I9OO4KmEUYRRxyIBuv43p9lHpdwho46qEUYRRxCEDuvlG+r4fRRLQxlUJowijiEMGtBXzpTd/dH0FAW1clTCKMIo4ZkCffxSTDxPZw1UJowijiKMG9G8fZ/dDuCphFGEUceCAdrh5wn8S0MZVCaMIowgBvRLQb3FVwijCKEJAtwlo46qEUYRRxFED+vCRys/eDPr5gx/lrHBVwijCKOKgAX16ASkvHwlojasSRhFGEccM6JcX4J8ehApojasSRhFGEYcM6PX5+/XzmO6+FFRAa1yVMIowijhkQM9PP3d0/ZnOVlABrXFVwijCKOKIAb3EMt/7PD8WVEBrXJUwijCKOGJAX3yg8mNBBbTGVQmjCKOIwwf0WtC3AlrlqoRRhFHE8QPaPgpUQGtclTCKMIo4YkCffw/078ffCS+gNa5KGEUYRRwxoNe3Lz3/rXIf353e/JeAlrgqYRRhFHHIgF7fB/r8F3jcP7ynXkALXJUwijCKOGRAH95B//xp/L2AFrkqYRRhFHHMgD4U9Plj0OtjUgEtcFXCKMIo4qABvf3d8HcCWuGqhFGEUcRRA7qXgDauShhFGEUI6DYBbVyVMIowihDQbQLauCphFGEUIaDbBLRxVcIowihCQLcJaOOqhFGEUYSAbhPQxlUJowijCAHdJqCNqxJGEUYRArpNQBtXJYwijCIEdJuANq5KGEUYRQjoNgFtXJUwijCKENBtAtq4KmEUYRQhoNsEtHFVwijCKEJAtwlo46qEUYRRhIBuE9DGVQmjCKMIAd0moI2rEkYRRhECuk1AG1cljCKMIgR0m4A2rkoYRRhFCOg2AW1clTCKMIoQ0G0C2rgqYRRhFCGg2wS0cVXCKMIoQkC3CWjjqoRRhFGEgG4T0MZVCaMIowgB3SagjasSRhFGEQK6TUAbVyWMIowiBHSbgDauShhFGEUI6DYBbVyVMIowihDQbQLauCphFGEUIaDbBLRxVcIowihCQLcJaOOqhFGEUYSAbhPQxlUJowijCAHdJqCNqxJGEUYRArpNQBtXJYwijCIEdJuANq5KGEUYRQjoNgFtXJUwijCKENBtAtq4KmEUYRQhoNsEtHFVwijCKEJAtwlo46qEUYRRhIBuE9DGVQmjCKMIAd0moI2rEkYRRhECuk1AG1cljCKMIgR0m4A2rkoYRRhFCOg2AW1clTCKMIoQ0G0C2rgqYRRhFCGg2wS0cVXCKMIoQkC3CWjjqoRRhFGEgG4T0MZVCaMIowgB3SagjasSRhFGEQK6TUAbVyWMIowiBHSbgDauShhFGEUI6DYBbVyVMIowihDQbQLauCphFGEUIaDbBLRxVcIowijiwAE9n5687f+XBbRxVcIowijiqAG9O73U21ABbVyVMIowijhmQD++O33tlz+7voKANq5KGEUYRRwyoJ8/vCzmp/eXv//1r54vIaCNqxJGEUYRhwzo/U0ur0n9vedLCGjjqoRRhFHEIQN6vn3CfnkQ2vVtUAFtXJUwijCKOGJALw83f7v5h3d9z+EFtHFVwijCKOKIAb082rx9un7f9zKSgDauShhFGEUI6DYBbVyVMIowijhiQD2F/3FclTCKMIo4YkC9iPTjuCphFGEUcciAbr+N6fZR6XcIaOOqhFGEUcQhA7r5Rvq+H0US0MZVCaMIo4hDBrQV86U3f3R9BQFtXJUwijCKOGZAn38Ukw8T2cNVCaMIo4ijBvRvH2f3Q7gqYRRhFHHggHa4ecJ/EtDGVQmjCKMIAb0S0G9xVcIowihCQLcJaOOqhFGEUYSAbhPQxlUJowijCAHdJqCNqxJGEUYRArpNQBtXJYwijCIEdJuANq5KGEUYRRwxoBs/h9T9a+UEtHFVwijCKEJAv/GHE9AHrkoYRRhFHDGgW7/VWEBrXJUwijCKOGRAHx6Ddn163Q0BbVyVMIowijhmQK8F7fz4pa8IaOOqhFGEUcRBA3p9Ft/1Kzy+JqCNqxJGEUYRRw3o33enjd8s988JaOOqhFGEUcRhA3p5Er/nIaiANq5KGEUYRRw2oDsfggpo46qEUYRRxHEDuo+ANq5KGEUYRQjoNgFtXJUwijCKENBtAtq4KmEUYRQhoNsEtHFVwijCKEJAtwlo46qEUYRRhIBuE9DGVQmjCKMIAd0moI2rEkYRRhECuk1AG1cljCKMIgR0m4A2rkoYRRhFCOg2AW1clTCKMIoQ0G0C2rgqYRRhFCGg2wS0cVXCKMIoQkC3CWjjqoRRhFGEgG4T0MZVCaMIowgB3SagjasSRhFGEQK6TUAbVyWMIowiBHSbgDauShhFGEUI6DYBbVyVMIowihDQbQLauCphFGEUIaDbBLRxVcIowihCQLcJaOOqhFGEUYSAbhPQxlUJowijCAHdJqCNqxJGEUYRArpNQBtXJYwijCIEdJuANq5KGEUYRQjoNgFtXJUwijCKENBtAtq4KmEUYRQhoNsEtHFVwijCKEJAtwlo46qEUYRRhIBuE9DGVQmjCKMIAd0moI2rEkYRRhECuk1AG1cljCKMIgR0m4A2rkoYRRhFCOg2AW1clTCKMIoQ0G0C2rgqYRRhFCGg2wS0cVXCKMIoQkC3CWjjqoRRhFGEgG4T0MZVCaMIowgB3SagjasSRhFGEQK6TUAbVyWMIowiBHSbgDauShhFGEUI6DYBbVyVMIowihDQbQLauCphFGEUIaDbBLRxVcIowihCQLcJaOOqhFGEUYSAbhPQxlUJowijCAHdJqCNqxJGEUYRArpNQBtXJYwijCIEdJuANq5KGEUYRQjoNgFtXJUwijCKENBtAtq4KmEUYRQhoNsEtHFVwijCKEJAtwlo46qEUYRRhIBuE9DGVQmjCKMIAd0moI2rEkYRRhECuk1AG1cljCKMIgR0m4A2rkoYRRhFCOg2AW1clTCKMIoQ0G0C2rgqYRRhFCGg2wS0cVXCKMIoQkC3CWjjqoRRhFGEgG4T0MZVCaMIowgB3SagjasSRhFGEQcO6Pn05G3/vyygjasSRhFGEUcN6N3ppd6GCmjjqoRRhFHEMQP68d3pa7/82fUVBLRxVcIowijikAH9/OFlMT+9v/z9rzzfdxgAAAVESURBVH/1fAkBbVyVMIowijhkQO9vcnlN6u89X0JAG1cljCKMIg4Z0PPtE/bLg9Cub4MKaOOqhFGEUcQRA3p5uPnbzT+863sOL6CNqxJGEUYRRwzo5dHm7dP1+++9jHTzktOpI6AH98/n/rP/pMMZRRhF/PNR/GAC+q/wz+f+s/+kwxlFGEX881H8YEs/hQdY2dIvIgGsbPbbmG4flQL8S01+I33njyIBLGzgd18fivnSmz/G/ecAJhv68tX5q376BihwJEt/nB3Aypb+QGWAlQkoQJGAAhQJKECRgAIUCShAkYACFAkoQJGAAhQJKECRgAIUCShAkYACFAkoQJGAAhQJKECRgAIUCShAkYACFAkoQJGAAhQJKECRgAIUCShAkYACFAkoQJGAAhQJKECRgAIUCShAkYACFAkoQJGAAhQJKECRgAIUCShAkYACFAkoQJGAAhQJKECRgAIUCShAkYACFAkoQJGAAhQJaMWn97/8+bP/DAv4+O508eaPn/3nWEAbxW8/+4+xjstAfv/Zf4YZBLTg84eTgF7+L3J69OqHcVmIR68iGv/AdTlexSwEtOCsGc/7+eqn8aWfr6Qa/9n5tYxCQLs9XJdXnoyLu6enrNe78vZn/2l+qqdRXP+f8utfP/tPs4L7V/P/EgHt1b7b9eoD+uw52t0rH8fl/6iP3we+DMV3hP9+enYioNx4WI3/43ug18cYTw87rw/JX8Vl+YbL/1KfRnH3uifx6Poawf97JZMQ0D7XZ2u/exHpYRB5zfn8Si7Lf2YSV9f/jbyW/5UIaJ+764MNAX3p7Ilrc3l+YjGuj8h/ezWPxQW0QEBfuGTDSydXd6/lG3/fdbkdl3UQUL5JQF+48w7yv9ubEV5JNL6vPR8RUL5JQJ+7PGPzAFRAn9y3/50KKN8koM9c+mkYX95M/9r/X/L0/RwB5ZsE9Iv7V/4m0Beub3J73T9TcHkg3tZBQPkmAQ39fOHVv5M+3RRQvklAn5w9Z33plb+g9uVnCgSUbxLQ5vp9v1f+jPVr9687oHenl44/CwEtENAH108FOP4N6SOgAsp/IqBXl36+7u/3PfFTrSGg/AMC+rfXS7549kYu7+l64nugfJOA+gimZ66jyHt3XsGDrn9EQPkmAX38yFwfxP6gfURs40W1RkD5JgF98VssXn1An/16E/18JKB8k4C++I1IAvr0INR7YkNAAfguAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSgSUIAiAQUoElCAIgEFKBJQgCIBBSj6X0h6G9//waXGAAAAAElFTkSuQmCC" width="672" /></p>
+<pre class="r"><code>svmModel1 = svm(wins ~ PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10, data = train)
+svmPredict1 = predict(svmModel1, newdata = test[,1:10])
+#svmPredict1
+svmError = mean((svmPredict1 - test[,11])^2)
+svmError</code></pre>
+<pre><code>## [1] 52.47614</code></pre>
+<pre class="r"><code>trainS = predict(svmModel1)
+svmError = mean((trainS - train[,11])^2)
+svmError </code></pre>
+<pre><code>## [1] 25.3477</code></pre>
+<pre class="r"><code>RF_model &lt;- randomForest(as.factor(winClass) ~ PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10, data = train)
+RF_Pred &lt;- predict(RF_model, newdata = test[,1:10])
+head(test[,12])</code></pre>
+<pre><code>## [1] 4 2 1 4 3 2</code></pre>
+<pre class="r"><code>head(RF_Pred)</code></pre>
+<pre><code>##  2  5  7 11 12 18 
+##  3  2  1  4  2  2 
+## Levels: 1 2 3 4</code></pre>
+<pre class="r"><code>T1 &lt;- table(RF_Pred, test[,12])
+T1</code></pre>
+<pre><code>##        
+## RF_Pred  1  2  3  4
+##       1 20  3  2  0
+##       2 15 31 11  2
+##       3  1 13 36 15
+##       4  0  0  4 18</code></pre>
+<pre class="r"><code>C2 &lt;- confusionMatrix(T1)
+(C2)</code></pre>
+<pre><code>## $positive
+## NULL
+## 
+## $table
+##        
+## RF_Pred  1  2  3  4
+##       1 20  3  2  0
+##       2 15 31 11  2
+##       3  1 13 36 15
+##       4  0  0  4 18
+## 
+## $overall
+##       Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull 
+##   6.140351e-01   4.714560e-01   5.366802e-01   6.873639e-01   3.099415e-01 
+## AccuracyPValue  McnemarPValue 
+##   2.604259e-16            NaN 
+## 
+## $byClass
+##          Sensitivity Specificity Pos Pred Value Neg Pred Value Precision
+## Class: 1   0.5555556   0.9629630      0.8000000      0.8904110 0.8000000
+## Class: 2   0.6595745   0.7741935      0.5254237      0.8571429 0.5254237
+## Class: 3   0.6792453   0.7542373      0.5538462      0.8396226 0.5538462
+## Class: 4   0.5142857   0.9705882      0.8181818      0.8859060 0.8181818
+##             Recall        F1 Prevalence Detection Rate
+## Class: 1 0.5555556 0.6557377  0.2105263      0.1169591
+## Class: 2 0.6595745 0.5849057  0.2748538      0.1812865
+## Class: 3 0.6792453 0.6101695  0.3099415      0.2105263
+## Class: 4 0.5142857 0.6315789  0.2046784      0.1052632
+##          Detection Prevalence Balanced Accuracy
+## Class: 1            0.1461988         0.7592593
+## Class: 2            0.3450292         0.7168840
+## Class: 3            0.3801170         0.7167413
+## Class: 4            0.1286550         0.7424370
+## 
+## $mode
+## [1] &quot;sens_spec&quot;
+## 
+## $dots
+## list()
+## 
+## attr(,&quot;class&quot;)
+## [1] &quot;confusionMatrix&quot;</code></pre>
+<pre class="r"><code>NB_model &lt;- naiveBayes(as.factor(winClass) ~ PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10, data = train)
+NB_Pred &lt;- predict(NB_model, newdata = test[,1:10])
+head(test[,12])</code></pre>
+<pre><code>## [1] 4 2 1 4 3 2</code></pre>
+<pre class="r"><code>head(NB_Pred)</code></pre>
+<pre><code>## [1] 3 2 2 4 3 2
+## Levels: 1 2 3 4</code></pre>
+<pre class="r"><code>T3 &lt;- table(NB_Pred, test[,12])
+T3</code></pre>
+<pre><code>##        
+## NB_Pred  1  2  3  4
+##       1 16  2  0  0
+##       2 17 27  8  0
+##       3  3 17 36 16
+##       4  0  1  9 19</code></pre>
+<pre class="r"><code>C3 &lt;- confusionMatrix(T3)
+(C3)</code></pre>
+<pre><code>## $positive
+## NULL
+## 
+## $table
+##        
+## NB_Pred  1  2  3  4
+##       1 16  2  0  0
+##       2 17 27  8  0
+##       3  3 17 36 16
+##       4  0  1  9 19
+## 
+## $overall
+##       Accuracy          Kappa  AccuracyLower  AccuracyUpper   AccuracyNull 
+##   5.730994e-01   4.144385e-01   4.953155e-01   6.483045e-01   3.099415e-01 
+## AccuracyPValue  McnemarPValue 
+##   1.060419e-12            NaN 
+## 
+## $byClass
+##          Sensitivity Specificity Pos Pred Value Neg Pred Value Precision
+## Class: 1   0.4444444   0.9851852      0.8888889      0.8692810 0.8888889
+## Class: 2   0.5744681   0.7983871      0.5192308      0.8319328 0.5192308
+## Class: 3   0.6792453   0.6949153      0.5000000      0.8282828 0.5000000
+## Class: 4   0.5428571   0.9264706      0.6551724      0.8873239 0.6551724
+##             Recall        F1 Prevalence Detection Rate
+## Class: 1 0.4444444 0.5925926  0.2105263     0.09356725
+## Class: 2 0.5744681 0.5454545  0.2748538     0.15789474
+## Class: 3 0.6792453 0.5760000  0.3099415     0.21052632
+## Class: 4 0.5428571 0.5937500  0.2046784     0.11111111
+##          Detection Prevalence Balanced Accuracy
+## Class: 1            0.1052632         0.7148148
+## Class: 2            0.3040936         0.6864276
+## Class: 3            0.4210526         0.6870803
+## Class: 4            0.1695906         0.7346639
+## 
+## $mode
+## [1] &quot;sens_spec&quot;
+## 
+## $dots
+## list()
+## 
+## attr(,&quot;class&quot;)
+## [1] &quot;confusionMatrix&quot;</code></pre>
 </div>
 
 

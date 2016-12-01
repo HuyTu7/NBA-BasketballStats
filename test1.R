@@ -4,7 +4,7 @@ library(lattice)
 library(e1071)
 library(nnet)
 library(ROCR)
-data = read.csv("team_season.csv", header = T)
+data = read.csv("data/team_season.csv", header = T)
 #data
 #0-35 1 poor
 #35-50 2 average
