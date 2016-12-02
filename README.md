@@ -6,3 +6,10 @@
 * Aravind Anantha (aananth3@ncsu.edu)
 * Chethan Thipperudrappa (cnanniv@ncsu.edu)
 
+## Game outcome prediction based on team performance per season
+* Game Outcome Prediction:
+* * Code for Win Ration Prediction based on regression based alogrithms can be found [here](https://github.ncsu.edu/hqtu/BasketballStats/tree/master/WinRatioPrediction)
+* * Code for Team Performance can be found [here](https://github.ncsu.edu/hqtu/BasketballStats/tree/master/PerformanceClassification)
+## Outstanding player detection 
+* Code for outstanding player detection can be found [here](https://github.ncsu.edu/hqtu/BasketballStats/tree/master/OutlierDetection)
+
