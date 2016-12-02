@@ -14,7 +14,7 @@
 ### Outstanding player detection 
 * Code for outstanding player detection can be found [here](https://github.ncsu.edu/hqtu/BasketballStats/tree/master/OutlierDetection)
 
-#### Instructions to run the code:
+### Instructions to run the code:
 * All the code is written in R
 * Please install the packages required packages for example: mvoutliers package is required to run outlier detection algorithms.
 * Please set the working directory to the location of the data file in your local machine
