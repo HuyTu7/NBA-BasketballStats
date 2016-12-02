@@ -7,7 +7,7 @@
 * Chethan Thipperudrappa (cnanniv@ncsu.edu)
 
 ## Game outcome prediction based on team performance per season
-* Game Outcome Prediction:
+### Game Outcome Prediction:
 *  Code for Win Ration Prediction based on regression based alogrithms can be found [here](https://github.ncsu.edu/hqtu/BasketballStats/tree/master/WinRatioPrediction)
 *  Code for Team Performance can be found [here](https://github.ncsu.edu/hqtu/BasketballStats/tree/master/PerformanceClassification)
 
