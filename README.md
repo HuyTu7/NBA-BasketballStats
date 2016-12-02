@@ -1,4 +1,4 @@
-# Project: NBA game outcome prediction and outstanding player detection
+# NBA game outcome prediction and outstanding player detection
 
 ## Team Memebers:
 * Huy Tu (hqtu@ncsu.edu)
