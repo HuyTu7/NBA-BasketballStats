@@ -1,0 +1,84 @@
+---
+title: "Team Performance per Season Prediction with Regression 2"
+output: html_document
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library('knitr')
+library(caret)
+library(ggplot2)
+library(lattice)
+library(e1071)
+library(nnet)
+library(ROCR)
+library(randomForest)
+
+set.seed(123)
+```
+
+
+## Data Preprocessing
+
+```{r}
+data = read.csv("../data/team_season.csv", header = T)
+wins = data$won*100/(data$won+data$lost)
+head(wins)
+```
+
+```{r}
+pca = prcomp(data[,3:33], center = T, scale. = T)
+summary(pca)
+components = preProcess(data[,3:33], method=c("center", "scale", "pca"))
+(components)
+
+pcaData = cbind(predict(components, data[,3:33]), wins)
+
+#pcaData[1,]
+
+## 75% of the sample size
+smp_size <- floor(0.75 * nrow(pcaData))
+
+## set the seed to make your partition reproductible
+set.seed(123)
+train_ind <- sample(seq_len(nrow(pcaData)), size = smp_size)
+
+train <- pcaData[train_ind, ]
+test <- pcaData[-train_ind, ]
+```
+
+## Linear Regression with PCA
+
+```{r}
+model = lm(wins~PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10, data = train)
+ 
+#model
+
+outcomes = predict.lm(model, test[,1:10])
+
+trainOutput = predict.lm(model)
+trainError = sqrt(mean((trainOutput - train[,11])^2))
+trainError
+
+#head(outcomes)
+#head(test[,11])
+
+testError = sqrt(mean((outcomes - test[,11])^2))
+testError
+```
+
+## Support Vector Regression with PCA
+
+```{r}
+svmModel1 = svm(wins ~ PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10, data = train)
+svmPredict1 = predict(svmModel1, newdata = test[,1:10])
+#svmPredict1
+svmError = sqrt(mean((svmPredict1 - test[,11])^2))
+svmError
+
+trainS = predict(svmModel1)
+svmError = sqrt(mean((trainS - train[,11])^2))
+svmError
+```

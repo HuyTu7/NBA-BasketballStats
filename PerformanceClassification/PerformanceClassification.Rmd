@@ -1,0 +1,118 @@
+---
+title: "Team Performance per Season Prediction with Classification"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library('knitr')
+library(caret)
+library(ggplot2)
+library(lattice)
+library(e1071)
+library(nnet)
+library(ROCR)
+library(randomForest)
+
+set.seed(123)
+```
+
+
+## Data Pre-Processing
+
+```{r}
+data = read.csv("../data/team_season.csv", header = T)
+#data
+#0-35 1 poor
+#35-50 2 average
+#50-70 3 good
+#70-100 4 outstanding
+wins = data$won*100/(data$won+data$lost)
+#wins
+winClass = c(1:684)
+for (i in c(1:684)){
+  if (wins[i] <= 35) {
+    winClass[i] = 1
+  }
+  else if (wins[i] > 35 && wins[i] <= 50){
+    winClass[i] = 2
+  }
+  else if (wins[i] > 50 && wins[i] <= 65){
+    winClass[i] = 3
+  }
+  else {
+    winClass[i] = 4
+  }
+}
+head(winClass)
+head(wins)
+```
+
+```{r}
+pca = prcomp(data[,3:33], center = T, scale. = T)
+summary(pca)
+components = preProcess(data[,3:33], method=c("center", "scale", "pca"))
+(components)
+
+pcaData = cbind(predict(components, data[,3:33]), wins, winClass)
+
+#pcaData[1,]
+
+## 75% of the sample size
+smp_size <- floor(0.75 * nrow(pcaData))
+
+## set the seed to make your partition reproductible
+set.seed(123)
+train_ind <- sample(seq_len(nrow(pcaData)), size = smp_size)
+
+train <- pcaData[train_ind, ]
+test <- pcaData[-train_ind, ]
+```
+
+#Support Vector Machine Classifier
+
+```{r}
+svmModel = svm(winClass ~ PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10, data = train, type = 'C-classification')
+svmModel
+
+svmPredict = predict(svmModel, newdata = test[,1:10])
+
+head(test[,12])
+head(svmPredict)
+
+c = confusionMatrix(svmPredict, test[,12])
+
+(c)
+
+plot(svmPredict)
+```
+
+## Random Forrest Classifier
+
+```{r}
+RF_model <- randomForest(as.factor(winClass) ~ PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10, data = train)
+RF_Pred <- predict(RF_model, newdata = test[,1:10])
+plot(RF_Pred)
+head(test[,12])
+head(RF_Pred)
+T2 <- table(RF_Pred, test[,12])
+T2
+C2 <- confusionMatrix(T2)
+(C2)
+``` 
+
+## Naive Bayes Classifier
+
+```{r}
+NB_model <- naiveBayes(as.factor(winClass) ~ PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10, data = train)
+NB_Pred <- predict(NB_model, newdata = test[,1:10])
+head(test[,12])
+head(NB_Pred)
+T3 <- table(NB_Pred, test[,12])
+T3
+precisionS <- (diag(T3)/apply(T3, 1, sum))
+precisionS
+C3 <- confusionMatrix(T3)
+(C3)
+``` 

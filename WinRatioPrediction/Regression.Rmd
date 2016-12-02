@@ -1,0 +1,128 @@
+---
+title: "Team Performance per Season Prediction with Regression 1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library('knitr')
+library(R.matlab)
+library(leaps)
+library(MASS)
+library(magrittr)
+library(dtplyr)
+library(boot)
+library(e1071)
+library(glmnet)
+
+set.seed(123)
+```
+
+
+## Sampling Data
+```{r}
+data = read.csv("../data/team_season.csv", header = T)
+smp_size <- floor(0.75 * nrow(data))
+orders = sample(c(1:nrow(data)), 0.7*nrow(data), replace = FALSE, prob = NULL)
+
+
+train <- data[orders, ]
+test <- data[-orders, ]
+
+wins = (train$won)/(train$won+train$lost)
+
+train <- cbind.data.frame(train, wins)
+train$won <- NULL
+train$lost <- NULL
+```
+
+## BIC Feature Selection
+```{r}
+head(train)
+fitF <- regsubsets(wins ~., data=train, nvmax = ncol(data), method = "forward")
+fitFS <- summary(fitF)
+fitFBICN <- which.min(fitFS$bic)
+fitFBIC <- coef(fitF, fitFBICN)
+fitFBIC
+
+fitB <- regsubsets(wins ~., data=train, nvmax = ncol(data), method = "backward")
+fitBS <- summary(fitB)
+fitBBICN <- which.min(fitBS$bic)
+fitBBIC <- coef(fitB, fitBBICN)
+fitBBIC
+```
+
+## stepAIC Feature Selection
+```{r, results= 'hide'}
+mod_bwd <- stepAIC(lm(wins ~ team + year + o_fgm + o_fga + o_ftm + o_fta + o_oreb + o_dreb + o_reb + o_asts + o_pf + o_stl + o_to + o_blk + o_3pm + o_3pa + o_pts + d_fgm + d_fga + d_ftm + d_fta + d_oreb + d_dreb + d_reb + d_asts + d_pf + d_stl + d_to +d_blk + d_3pm + d_3pa + d_pts   + pace, data = train), direction = "backward", test = "F")
+#sqrtRE_bwd <- summary(mod_bwd)$sigma
+#sqrtRE_bwd
+```
+
+## Baseline, Linear Regression, and Support Vector Regression methods 
+
+```{r}
+#mod <- glm(wins ~ o_ftm + d_fgm + d_ftm + d_pf +  d_3pm +  pace, data = train)
+
+#mod <- glm(wins ~ o_pts + o_pts^2 + d_fga + d_ftm + d_ftm^2 + d_3pa + d_3pa^2, data = train)
+#mod <- glm(wins ~ o_pts + d_fga + d_fgm + d_ftm +  d_3pm, data = train) 
+#backward <- step(mod)
+#summary(backward)
+BL_mod <- glm(formula = wins ~ o_fgm + o_fga + o_ftm + o_fta + o_oreb + o_dreb + o_reb + o_asts + o_pf + o_stl + o_to + o_blk + o_3pm + o_3pa + o_pts + d_fgm + d_fga + d_ftm + d_fta + d_oreb + d_dreb + d_reb + d_asts + d_pf + d_stl + d_to +d_blk + d_3pm + d_3pa + d_pts + pace, data = train, family = "binomial")
+#o_pts + d_fga + d_fgm + d_ftm +  d_3pm
+svmAIC_mod <- svm(wins ~ o_fgm + o_fga + o_ftm + o_oreb + o_asts + o_to + o_3pm + d_fgm + d_fga + d_ftm + d_to + d_blk + d_3pm, data = train)
+svmBIC_mod <- svm(wins ~ o_fgm + o_ftm + o_3pm + d_fga + d_ftm + d_fta + d_3pa, data= train) 
+
+LRAIC_mod <- glm(wins ~ o_fgm + o_fga + o_ftm + o_oreb + o_asts + o_to + o_3pm + d_fgm + d_fga + d_ftm + d_to + d_blk + d_3pm, data = train)
+
+#CV <- cv.glm(data = train, glmfit = mod, K = 10)$delta
+#CV
+#CV_2 <- CV^.5
+#CV_2
+
+BL_P1 <- predict(BL_mod)
+BL_P2 <- predict(BL_mod, newdata = test)
+
+LRAIC_P1 <- predict(LRAIC_mod)
+LRAIC_P2 <- predict(LRAIC_mod, newdata = test)
+
+svmAIC_P1 <- predict(svmAIC_mod)
+svmAIC_P2 <- predict(svmAIC_mod, newdata = test)
+
+svmBIC_P1 <- predict(svmBIC_mod)
+svmBIC_P2 <- predict(svmBIC_mod, newdata = test)
+Results <- data.frame((test$won)/(test$won+test$lost))
+#write.csv(cbind.data.frame(SVM_P1, Results), file="SVM_P1.csv")
+#head(SVM_P1)
+
+ResultsTr <- train$wins
+E1 <- sqrt(mean((BL_P1*100 - ResultsTr*100)^2))
+E2 <- sqrt(mean((BL_P2*100 - Results*100)^2))
+c(E1, E2)
+```
+
+## Ridge and Lasso Methods
+
+```{r}
+x <- as.matrix(cbind(train$o_fgm, train$o_fga, train$o_ftm, train$o_oreb, train$o_asts, train$o_to, train$o_3pm, train$d_fgm, train$d_fga, train$d_ftm, train$d_to, train$d_blk, train$d_3pm))
+y <- as.matrix(train$wins)
+lassomod <- glmnet(x=x,y=y, alpha=1, family='gaussian')
+ridgemod <- glmnet(x=x,y=y, alpha=0, family='gaussian')
+summary(lassomod)
+summary(ridgemod)
+xtest <- as.matrix(cbind(test$o_fgm, test$o_fga, test$o_ftm, test$o_oreb, test$o_asts, test$o_to, test$o_3pm, test$d_fgm, test$d_fga, test$d_ftm, test$d_to, test$d_blk, test$d_3pm))
+ytest <- Results
+lasso_train_pred <- predict(lassomod, x, type="link")
+ridge_train_pred <- predict(ridgemod, x, type="link")
+lasso_test_pred <- predict(lassomod, xtest, type="link")
+ridge_test_pred <- predict(ridgemod, xtest, type="link")
+
+lasso_train_rmse <- sqrt(mean((train$wins*100 - lasso_train_pred*100)^2))
+ridge_train_rmse <- sqrt(mean((train$wins*100 - ridge_train_pred*100)^2))
+lasso_test_rmse <- sqrt(mean((ytest*100 - lasso_test_pred*100)^2))
+ridge_test_rmse <- sqrt(mean((ytest*100 - ridge_test_pred*100)^2))
+print(lasso_train_rmse)
+print(ridge_train_rmse)
+print(lasso_test_rmse)
+print(ridge_test_rmse)
+```
